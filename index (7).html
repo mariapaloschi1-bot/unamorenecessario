@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#000008" />
+
+  <!-- ── SEO / Share meta ───────────────────────────────────── -->
+  <title>Un amore necessario</title>
+  <meta name="description" content="Vieni qui, quando nella vita sentirai che ti manco :)" />
+  <meta property="og:title"       content="Un amore necessario" />
+  <meta property="og:description" content="Vieni qui, quando nella vita sentirai che ti manco :)" />
+  <meta property="og:type"        content="website" />
+  <meta name="twitter:card"        content="summary" />
+  <meta name="twitter:title"       content="Un amore necessario" />
+  <meta name="twitter:description" content="Vieni qui, quando nella vita sentirai che ti manco :)" />
+
+  <!-- ── Favicon — cuore nero SVG inline ───────────────────── -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23111111' d='M50 88 C18 66 4 50 4 31 C4 15 15 4 31 4 C39 4 47 9 50 16 C53 9 61 4 69 4 C85 4 96 15 96 31 C96 50 82 66 50 88Z'/%3E%3C/svg%3E" />
+
+  <!-- ── Google Fonts ───────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Raleway:wght@100;200;300&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #00000a;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+      user-select: none;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       CANVAS (universo + particelle — unico layer)
+       ═══════════════════════════════════════════════════════ */
+    #universe {
+      position: fixed;
+      inset: 0;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       VIGNETTE overlay
+       ═══════════════════════════════════════════════════════ */
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 38%,
+        rgba(0,0,8,.45) 70%,
+        rgba(0,0,4,.85) 100%
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       LOCK SCREEN
+       ═══════════════════════════════════════════════════════ */
+    #lock-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(18px, 4vw, 32px);
+      padding: 24px;
+      transition: opacity 1.8s cubic-bezier(.4,0,.2,1),
+                  visibility 1.8s cubic-bezier(.4,0,.2,1);
+    }
+    #lock-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* orbiting ring */
+    .lock-ring {
+      position: relative;
+      width: clamp(60px, 14vw, 90px);
+      height: clamp(60px, 14vw, 90px);
+    }
+    .lock-ring::before,
+    .lock-ring::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .lock-ring::after {
+      inset: 8px;
+      border-color: rgba(255,255,255,.07);
+      animation: spin 18s linear infinite;
+    }
+    .lock-glyph {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      color: rgba(255,255,255,.5);
+      animation: breathe 3.5s ease-in-out infinite;
+    }
+
+    @keyframes spin    { to { transform: rotate(360deg); } }
+    @keyframes breathe {
+      0%,100% { opacity:.35; transform:scale(.95); }
+      50%     { opacity:.7;  transform:scale(1.05); }
+    }
+
+    .lock-label {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 100;
+      font-size: clamp(.68rem, 2.2vw, .82rem);
+      letter-spacing: .5em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+    }
+
+    /* input group */
+    .lock-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: min(320px, 88vw);
+    }
+    .lock-input-row {
+      position: relative;
+      width: 100%;
+    }
+    #pwd-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(255,255,255,.2);
+      color: #fff;
+      font-family: 'Raleway', sans-serif;
+      font-weight: 200;
+      font-size: clamp(.95rem, 3.5vw, 1.05rem);
+      letter-spacing: .28em;
+      padding: 10px 44px 10px 8px;
+      outline: none;
+      text-align: center;
+      transition: border-color .4s;
+      -webkit-appearance: none;
+    }
+    #pwd-input:focus  { border-bottom-color: rgba(255,255,255,.55); }
+    #pwd-input.shake  { animation: shake .38s ease; }
+    #pwd-input::placeholder {
+      color: rgba(255,255,255,.15);
+      letter-spacing: .2em;
+    }
+
+    #pwd-submit {
+      position: absolute;
+      right: 0; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,.3);
+      font-size: 1.2rem;
+      padding: 6px 10px;
+      transition: color .3s, transform .2s;
+      touch-action: manipulation;
+    }
+    #pwd-submit:active { color: rgba(255,255,255,.9); transform: translateY(-50%) translateX(3px); }
+
+    .lock-error {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 200;
+      font-size: clamp(.68rem, 2vw, .75rem);
+      letter-spacing: .22em;
+      color: rgba(255,120,120,.7);
+      height: 14px;
+      text-align: center;
+      transition: opacity .5s;
+    }
+    .lock-error.hidden-err { opacity: 0; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-8px); }
+      40%     { transform: translateX(8px); }
+      60%     { transform: translateX(-5px); }
+      80%     { transform: translateX(5px); }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════ */
+    #content {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 2.8s cubic-bezier(.4,0,.2,1) .4s;
+      pointer-events: none;
+    }
+    #content.visible { opacity: 1; pointer-events: auto; }
+
+    .message-wrap {
+      text-align: center;
+      max-width: min(700px, 92vw);
+    }
+
+    .msg-top {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.05rem, 3.8vw, 1.85rem);
+      color: rgba(255,255,255,.5);
+      letter-spacing: .06em;
+      line-height: 1.5;
+      display: block;
+      opacity: 0;
+      animation: riseIn 2.2s cubic-bezier(.4,0,.2,1) .6s forwards;
+      text-shadow: 0 0 60px rgba(160,140,255,.2);
+    }
+
+    .divider-line {
+      display: block;
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+      margin: clamp(14px,3.5vw,24px) auto;
+      animation: expandLine 1.8s ease 1.2s forwards;
+    }
+
+    .msg-main {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.6rem, 6.5vw, 3.6rem);
+      color: #ffffff;
+      letter-spacing: .04em;
+      line-height: 1.3;
+      display: block;
+      opacity: 0;
+      animation: riseIn 2.4s cubic-bezier(.4,0,.2,1) 1.4s forwards;
+      text-shadow:
+        0 0 40px rgba(210,200,255,.6),
+        0 0 90px rgba(160,130,255,.25),
+        0 2px 12px rgba(0,0,0,.8);
+    }
+
+    .msg-ornament {
+      display: block;
+      margin-top: clamp(16px,4vw,28px);
+      font-size: .65rem;
+      letter-spacing: .9em;
+      color: rgba(255,255,255,.15);
+      opacity: 0;
+      animation: riseIn 2s ease 2.4s forwards;
+    }
+
+    @keyframes riseIn {
+      from { opacity:0; transform:translateY(18px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes expandLine {
+      from { width:0; opacity:0; }
+      to   { width: clamp(40px, 10vw, 80px); opacity:1; }
+    }
+
+    /* ── Hint touch ───────────────────────────────────────── */
+    #hint {
+      position: fixed;
+      bottom: clamp(18px, 5vw, 32px);
+      left: 0; right: 0;
+      text-align: center;
+      z-index: 25;
+      font-family: 'Raleway', sans-serif;
+      font-weight: 100;
+      font-size: clamp(.6rem, 1.8vw, .72rem);
+      letter-spacing: .5em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.18);
+      opacity: 0;
+      transition: opacity 1.4s ease;
+      pointer-events: none;
+    }
+    #hint.show { opacity: 1; }
+    #hint.fade { opacity: 0; }
+
+    /* ── Ripple effect ────────────────────────────────────── */
+    .ripple {
+      position: fixed;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.35);
+      transform: scale(0);
+      pointer-events: none;
+      z-index: 30;
+      animation: rippleOut .9s cubic-bezier(.1,.8,.2,1) forwards;
+    }
+    @keyframes rippleOut {
+      to { transform: scale(8); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- UNIVERSE CANVAS -->
+<canvas id="universe"></canvas>
+
+<!-- VIGNETTE -->
+<div id="vignette"></div>
+
+<!-- ══════════════ LOCK SCREEN ══════════════ -->
+<div id="lock-screen">
+  <div class="lock-ring">
+    <div class="lock-glyph">✦</div>
+  </div>
+  <div class="lock-label">Inserisci la chiave</div>
+  <div class="lock-form">
+    <div class="lock-input-row">
+      <input id="pwd-input"
+             type="password"
+             placeholder="· · · · · · · · · ·"
+             autocomplete="off"
+             inputmode="text"
+             spellcheck="false" />
+      <button id="pwd-submit" aria-label="Entra">→</button>
+    </div>
+    <div class="lock-error hidden-err" id="pwd-error">Chiave errata — riprova.</div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN CONTENT ══════════════ -->
+<div id="content">
+  <div class="message-wrap">
+    <span class="msg-top">Se un giorno dovessimo dimenticarci,</span>
+    <span class="divider-line"></span>
+    <span class="msg-main">ricordati che ti amo.</span>
+    <span class="msg-ornament">✦ &nbsp; ✦ &nbsp; ✦</span>
+  </div>
+</div>
+
+<!-- HINT -->
+<div id="hint">tocca l'universo</div>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT
+     ════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────────────────────
+   PASSWORD
+───────────────────────────────────────────────────────────── */
+const PASS      = "FrancescoPazzesco";
+const lockEl    = document.getElementById('lock-screen');
+const contentEl = document.getElementById('content');
+const hintEl    = document.getElementById('hint');
+const inputEl   = document.getElementById('pwd-input');
+const submitBtn = document.getElementById('pwd-submit');
+const errorEl   = document.getElementById('pwd-error');
+
+let unlocked = false;
+
+function unlock() {
+  if (inputEl.value === PASS) {
+    unlocked = true;
+    lockEl.classList.add('hidden');
+    contentEl.classList.add('visible');
+    errorEl.classList.add('hidden-err');
+
+    // show hint after 4s, hide after 7s
+    setTimeout(() => {
+      hintEl.classList.add('show');
+      setTimeout(() => hintEl.classList.add('fade'), 3200);
+    }, 4000);
+  } else {
+    inputEl.value = '';
+    inputEl.classList.add('shake');
+    errorEl.classList.remove('hidden-err');
+    setTimeout(() => {
+      inputEl.classList.remove('shake');
+      errorEl.classList.add('hidden-err');
+    }, 2400);
+  }
+}
+
+submitBtn.addEventListener('click', unlock);
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
+window.addEventListener('load', () => setTimeout(() => inputEl.focus(), 300));
+
+
+/* ─────────────────────────────────────────────────────────────
+   RIPPLE DOM EFFECT (on unlocked screen)
+───────────────────────────────────────────────────────────── */
+function spawnRipple(x, y) {
+  const size = 30;
+  const el = document.createElement('div');
+  el.className = 'ripple';
+  el.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${x - size/2}px; top:${y - size/2}px;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 950);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   UNIVERSE ENGINE
+───────────────────────────────────────────────────────────── */
+(function() {
+  const canvas = document.getElementById('universe');
+  const ctx    = canvas.getContext('2d');
+
+  let W, H;
+  let stars    = [];
+  let nebulae  = [];
+  let shoots   = [];
+  let particles = [];   // interactive particles
+
+  /* ── camera (parallax) ── */
+  let camX = 0, camY = 0;
+  let tCamX= 0, tCamY= 0;
+  let gyroX= 0, gyroY= 0;    // gyroscope offset
+
+  /* ── resize ── */
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    buildStars();
+    buildNebulae();
+  }
+
+  /* ── NEBULAE ── */
+  function buildNebulae() {
+    nebulae = [];
+    const palette = [
+      [60, 40,160,.06], [110,35,190,.05], [35,60,210,.055],
+      [140,35,130,.05], [45,100,170,.05], [90,30,200,.055],
+    ];
+    palette.forEach(([r,g,b,a]) => {
+      nebulae.push({
+        x: .1 + Math.random()*.8,
+        y: .1 + Math.random()*.8,
+        rx: W * (.18 + Math.random()*.26),
+        ry: H * (.14 + Math.random()*.22),
+        r,g,b,a,
+        rot: Math.random() * Math.PI * 2,
+        dRot: (Math.random()-.5) * .0004,
+        depth: .08 + Math.random()*.18,
+      });
+    });
+  }
+
+  /* ── STARS ── */
+  function buildStars() {
+    stars = [];
+    // background (distant)
+    for (let i=0; i<320; i++) push(0.35+Math.random()*.15, 0.2+Math.random()*.5, .08+Math.random()*.15);
+    // midground
+    for (let i=0; i<180; i++) push(0.55+Math.random()*.2, 0.7+Math.random()*1.1, .25+Math.random()*.3);
+    // foreground
+    for (let i=0; i<60;  i++) push(0.75+Math.random()*.25,1.3+Math.random()*1.2, .5+Math.random()*.45);
+
+    function push(twinkleBase, radius, depth) {
+      stars.push({
+        x: Math.random(), y: Math.random(),
+        r: radius,
+        base: twinkleBase,
+        speed: .003 + Math.random()*.014,
+        phase: Math.random()*Math.PI*2,
+        hue: 210 + Math.random()*130,
+        sat: 30 + Math.random()*40,
+        depth,
+      });
+    }
+  }
+
+  /* ── SHOOTING STAR ── */
+  function spawnShoot() {
+    const edge = Math.random() < .6;
+    const sx   = edge ? Math.random()*W : 0;
+    const sy   = edge ? 0 : Math.random()*H*.4;
+    const ang  = (Math.PI/7 + Math.random()*Math.PI/9);
+    const spd  = 5 + Math.random()*7;
+    shoots.push({
+      x:sx, y:sy,
+      vx: Math.cos(ang)*spd,
+      vy: Math.sin(ang)*spd,
+      len: 90 + Math.random()*130,
+      life: 1,
+      decay: .012 + Math.random()*.016,
+    });
+  }
+
+  /* ── INTERACTIVE PARTICLES ── */
+  function burst(x, y) {
+    const n = 22;
+    for (let i=0; i<n; i++) {
+      const ang = (Math.PI*2/n)*i + (Math.random()-.5)*.5;
+      const spd = 1.2 + Math.random()*4;
+      const warm = Math.random() < .4;
+      particles.push({
+        x, y,
+        vx: Math.cos(ang)*spd,
+        vy: Math.sin(ang)*spd,
+        r: .6 + Math.random()*2,
+        alpha: .9+Math.random()*.1,
+        decay: .013 + Math.random()*.022,
+        hue: warm ? 38+Math.random()*22 : 220+Math.random()*80,
+        sat: 70+Math.random()*30,
+        tail: false,
+      });
+    }
+    // central flash ring
+    for (let i=0; i<6; i++) {
+      const ang = Math.random()*Math.PI*2;
+      const spd = .3+Math.random()*.8;
+      particles.push({
+        x, y,
+        vx: Math.cos(ang)*spd,
+        vy: Math.sin(ang)*spd,
+        r: 2.5+Math.random()*1.5,
+        alpha: .55,
+        decay: .025+Math.random()*.02,
+        hue: 240+Math.random()*40,
+        sat: 80,
+        tail: false,
+      });
+    }
+  }
+
+  function trail(x, y) {
+    if (Math.random()>.55) return;
+    particles.push({
+      x: x+(Math.random()-.5)*10,
+      y: y+(Math.random()-.5)*10,
+      vx: (Math.random()-.5)*.6,
+      vy: (Math.random()-.5)*.6-.3,
+      r: .4+Math.random()*1.4,
+      alpha: .7+Math.random()*.3,
+      decay: .018+Math.random()*.025,
+      hue: 200+Math.random()*120,
+      sat: 60+Math.random()*40,
+      tail: true,
+    });
+  }
+
+  /* ── INPUT EVENTS ── */
+  let dragging = false;
+
+  // pointer events (unified mouse + touch)
+  canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    dragging = true;
+    burst(e.clientX, e.clientY);
+    if (unlocked) spawnRipple(e.clientX, e.clientY);
+    // parallax target on tap
+    tCamX = (e.clientX/W - .5) * 28;
+    tCamY = (e.clientY/H - .5) * 28;
+  }, {passive:false});
+
+  canvas.addEventListener('pointermove', e => {
+    e.preventDefault();
+    tCamX = (e.clientX/W - .5) * 28;
+    tCamY = (e.clientY/H - .5) * 28;
+    if (dragging) trail(e.clientX, e.clientY);
+  }, {passive:false});
+
+  canvas.addEventListener('pointerup',   () => dragging = false, {passive:true});
+  canvas.addEventListener('pointerleave',() => dragging = false, {passive:true});
+
+  // gyroscope (mobile)
+  window.addEventListener('deviceorientation', e => {
+    if (e.beta==null || e.gamma==null) return;
+    gyroX = (e.gamma/45) * 22;   // tilt left/right → X
+    gyroY = ((e.beta-45)/45)*22; // tilt fwd/back  → Y
+  }, {passive:true});
+
+  // also handle lock-screen touch (stars on password screen)
+  lockEl.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    burst(e.clientX, e.clientY);
+  }, {passive:true});
+
+
+  /* ── DRAW ── */
+  let t = 0;
+  function draw() {
+    t += .01;
+
+    // smooth camera
+    const useGyro = Math.abs(gyroX)+Math.abs(gyroY) > 0.5;
+    const gx = useGyro ? gyroX : tCamX;
+    const gy = useGyro ? gyroY : tCamY;
+    camX += (gx - camX) * .04;
+    camY += (gy - camY) * .04;
+
+    /* 1 ── background */
+    const bg = ctx.createRadialGradient(W*.5,H*.4,0, W*.5,H*.4, Math.max(W,H)*.75);
+    bg.addColorStop(0,   '#0d0a20');
+    bg.addColorStop(.35, '#060410');
+    bg.addColorStop(.7,  '#02020a');
+    bg.addColorStop(1,   '#00000a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,W,H);
+
+    /* 2 ── nebulae */
+    nebulae.forEach(n => {
+      n.rot += n.dRot;
+      const nx = n.x*W + camX*n.depth;
+      const ny = n.y*H + camY*n.depth;
+      ctx.save();
+      ctx.translate(nx, ny);
+      ctx.rotate(n.rot);
+      ctx.scale(1, n.ry/n.rx);
+      const g = ctx.createRadialGradient(0,0,0, 0,0,n.rx);
+      g.addColorStop(0,   `rgba(${n.r},${n.g},${n.b},${n.a})`);
+      g.addColorStop(.5,  `rgba(${n.r},${n.g},${n.b},${n.a*.4})`);
+      g.addColorStop(1,   `rgba(${n.r},${n.g},${n.b},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0,0,n.rx,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    /* 3 ── stars */
+    stars.forEach(s => {
+      const alpha = s.base + Math.sin(t*s.speed*60+s.phase)*(1-s.base)*.5;
+      const sx = (s.x*W + camX*s.depth + W*2) % W;
+      const sy = (s.y*H + camY*s.depth + H*2) % H;
+
+      ctx.beginPath();
+      ctx.arc(sx,sy,s.r,0,Math.PI*2);
+      ctx.fillStyle = `hsla(${s.hue},${s.sat}%,96%,${alpha})`;
+      ctx.fill();
+
+      if (s.r > 1.2) {
+        const glow = ctx.createRadialGradient(sx,sy,0, sx,sy,s.r*6);
+        glow.addColorStop(0, `hsla(${s.hue},70%,98%,${alpha*.4})`);
+        glow.addColorStop(1, `hsla(${s.hue},70%,98%,0)`);
+        ctx.beginPath();
+        ctx.arc(sx,sy,s.r*6,0,Math.PI*2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+    });
+
+    /* 4 ── shooting stars */
+    for (let i=shoots.length-1;i>=0;i--) {
+      const s = shoots[i];
+      s.x += s.vx; s.y += s.vy;
+      s.life -= s.decay;
+      if (s.life<=0||s.x>W+100||s.y>H+100) { shoots.splice(i,1); continue; }
+      const tx = s.x - s.vx*(s.len/Math.hypot(s.vx,s.vy));
+      const ty = s.y - s.vy*(s.len/Math.hypot(s.vx,s.vy));
+      const g  = ctx.createLinearGradient(tx,ty,s.x,s.y);
+      g.addColorStop(0,   'rgba(255,255,255,0)');
+      g.addColorStop(.65, `rgba(200,200,255,${s.life*.55})`);
+      g.addColorStop(1,   `rgba(255,255,255,${s.life})`);
+      ctx.beginPath();
+      ctx.moveTo(tx,ty); ctx.lineTo(s.x,s.y);
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 1.3;
+      ctx.stroke();
+    }
+    if (Math.random()<.0035) spawnShoot();
+
+    /* 5 ── interactive particles */
+    for (let i=particles.length-1;i>=0;i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += .03; // subtle gravity
+      p.vx *= .985;
+      p.alpha -= p.decay;
+      if (p.alpha<=0) { particles.splice(i,1); continue; }
+
+      const gp = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,p.r*3.5);
+      gp.addColorStop(0,   `hsla(${p.hue},${p.sat}%,95%,${p.alpha})`);
+      gp.addColorStop(.4,  `hsla(${p.hue},${p.sat}%,85%,${p.alpha*.5})`);
+      gp.addColorStop(1,   `hsla(${p.hue},${p.sat}%,85%,0)`);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*3.5,0,Math.PI*2);
+      ctx.fillStyle = gp;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `hsla(${p.hue},${p.sat}%,98%,${p.alpha})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+</script>
+
+</body>
+</html>
